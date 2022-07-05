@@ -13,7 +13,7 @@ namespace MagneticCardReader
     {
         YSpiPort spiPort = null;
 
-        const bool DEBUG = false;
+        const bool DEBUG = true;
 
         public Form1()
         {
@@ -25,8 +25,8 @@ namespace MagneticCardReader
 
             // Setup Yoctopuce API
             YAPI.DisableExceptions();
-            if (DEBUG) YAPI.RegisterLogFunction(this.Log);
-            if (YAPI.RegisterHub("usb", ref errmsg) != YAPI.SUCCESS)
+            //if (DEBUG) YAPI.RegisterLogFunction(this.Log);
+            if (YAPI.RegisterHub("192.168.101.86", ref errmsg) != YAPI.SUCCESS)
             {
                 Log("Cannot connect to USB devices:");
                 Log(errmsg);
@@ -50,7 +50,8 @@ namespace MagneticCardReader
                     string identifier = module.get_serialNumber() + "." + module.functionId(i);
                     Log("Using " + identifier);
                     spiPort = YSpiPort.FindSpiPort(identifier);
-                    spiPort.set_spiMode("0,0,lsb");
+                    //spiPort.set_spiMode("0,0,lsb");
+                    //spiPort.set_spiMode("ext.clock,0,lsb");
                     spiPort.reset();
                 }
             }
@@ -84,11 +85,16 @@ namespace MagneticCardReader
                     } else if(firstChar == ";" && lastChar == "?")
                     {
                         int separator = track2.IndexOf("=");
-                        string ident = track2.Substring(1, separator - 1);
+                        string ident;
+
+                        if (separator == -1) ident = track2;
+                        else ident = track2.Substring(1, separator - 1);
+
+
                         for (int i = 4; i < ident.Length; i += 5) ident = ident.Insert(i, " ");
                         card_id.Text = ident;
-                        card_exp.Text = track2.Substring(separator+3, 2) + "/" + track2.Substring(separator + 1, 2);
-                        card_extra.Text = track2.Substring(separator+8, track2.Length - separator - 9);
+                        //card_exp.Text = track2.Substring(separator+3, 2) + "/" + track2.Substring(separator + 1, 2);
+                        //card_extra.Text = track2.Substring(separator+8, track2.Length - separator - 9);
                     }
                     else
                     {
@@ -168,7 +174,8 @@ namespace MagneticCardReader
             // Check Longitudinal redundancy code
             if (lrc != 0) return "! Read error (LRC)";
             // Return result (without LRC)
-            return result.Substring(0, result.Length - 1);
+            if (result.Length == 0) return "Bad Data";
+            else return result.Substring(0, result.Length - 1);
         }
     }
 }
